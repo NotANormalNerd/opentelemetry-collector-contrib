@@ -22,6 +22,7 @@ type rabbitmqExporter struct {
 	tlsFactory
 	settings       component.TelemetrySettings
 	routingKey     string
+	resourceAttribute string
 	connectionName string
 	*marshaler
 	publisherFactory
@@ -33,16 +34,17 @@ type (
 	tlsFactory       = func(context.Context) (*tls.Config, error)
 )
 
-func newRabbitmqExporter(cfg *Config, set component.TelemetrySettings, publisherFactory publisherFactory, tlsFactory tlsFactory, routingKey, connectionName string) *rabbitmqExporter {
-	exporter := &rabbitmqExporter{
-		config:           cfg,
-		settings:         set,
-		routingKey:       routingKey,
-		connectionName:   connectionName,
-		publisherFactory: publisherFactory,
-		tlsFactory:       tlsFactory,
-	}
-	return exporter
+func newRabbitmqExporter(cfg *Config, set component.TelemetrySettings, publisherFactory publisherFactory, tlsFactory tlsFactory, routingKey, resourceAttribute, connectionName string) *rabbitmqExporter {
+       exporter := &rabbitmqExporter{
+	       config:             cfg,
+	       settings:           set,
+	       routingKey:         routingKey,
+	       resourceAttribute:  resourceAttribute,
+	       connectionName:     connectionName,
+	       publisherFactory:   publisherFactory,
+	       tlsFactory:         tlsFactory,
+       }
+       return exporter
 }
 
 func (e *rabbitmqExporter) start(ctx context.Context, host component.Host) error {
@@ -86,45 +88,69 @@ func (e *rabbitmqExporter) start(ctx context.Context, host component.Host) error
 }
 
 func (e *rabbitmqExporter) publishTraces(context context.Context, traces ptrace.Traces) error {
-	body, err := e.tracesMarshaler.MarshalTraces(traces)
-	if err != nil {
-		return err
-	}
+       body, err := e.tracesMarshaler.MarshalTraces(traces)
+       if err != nil {
+	       return err
+       }
 
-	message := publisher.Message{
-		Exchange:   e.config.Routing.Exchange,
-		RoutingKey: e.routingKey,
-		Body:       body,
-	}
-	return e.publisher.Publish(context, message)
+       routingKey := e.routingKey
+       if e.resourceAttribute != "" && traces.ResourceSpans().Len() > 0 {
+	       attrVal, ok := traces.ResourceSpans().At(0).Resource().Attributes().Get(e.resourceAttribute)
+	       if ok {
+		       routingKey = attrVal.AsString()
+	       }
+       }
+
+       message := publisher.Message{
+	       Exchange:   e.config.Routing.Exchange,
+	       RoutingKey: routingKey,
+	       Body:       body,
+       }
+       return e.publisher.Publish(context, message)
 }
 
 func (e *rabbitmqExporter) publishMetrics(context context.Context, metrics pmetric.Metrics) error {
-	body, err := e.metricsMarshaler.MarshalMetrics(metrics)
-	if err != nil {
-		return err
-	}
+       body, err := e.metricsMarshaler.MarshalMetrics(metrics)
+       if err != nil {
+	       return err
+       }
 
-	message := publisher.Message{
-		Exchange:   e.config.Routing.Exchange,
-		RoutingKey: e.routingKey,
-		Body:       body,
-	}
-	return e.publisher.Publish(context, message)
+       routingKey := e.routingKey
+       if e.resourceAttribute != "" && metrics.ResourceMetrics().Len() > 0 {
+	       attrVal, ok := metrics.ResourceMetrics().At(0).Resource().Attributes().Get(e.resourceAttribute)
+	       if ok {
+		       routingKey = attrVal.AsString()
+	       }
+       }
+
+       message := publisher.Message{
+	       Exchange:   e.config.Routing.Exchange,
+	       RoutingKey: routingKey,
+	       Body:       body,
+       }
+       return e.publisher.Publish(context, message)
 }
 
 func (e *rabbitmqExporter) publishLogs(context context.Context, logs plog.Logs) error {
-	body, err := e.logsMarshaler.MarshalLogs(logs)
-	if err != nil {
-		return err
-	}
+       body, err := e.logsMarshaler.MarshalLogs(logs)
+       if err != nil {
+	       return err
+       }
 
-	message := publisher.Message{
-		Exchange:   e.config.Routing.Exchange,
-		RoutingKey: e.routingKey,
-		Body:       body,
-	}
-	return e.publisher.Publish(context, message)
+       routingKey := e.routingKey
+       if e.resourceAttribute != "" && logs.ResourceLogs().Len() > 0 {
+	       attrVal, ok := logs.ResourceLogs().At(0).Resource().Attributes().Get(e.resourceAttribute)
+	       if ok {
+		       routingKey = attrVal.AsString()
+	       }
+       }
+
+       message := publisher.Message{
+	       Exchange:   e.config.Routing.Exchange,
+	       RoutingKey: routingKey,
+	       Body:       body,
+       }
+       return e.publisher.Publish(context, message)
 }
 
 func (e *rabbitmqExporter) shutdown(_ context.Context) error {

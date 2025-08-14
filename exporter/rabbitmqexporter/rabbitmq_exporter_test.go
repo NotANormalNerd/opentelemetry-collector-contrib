@@ -1,3 +1,29 @@
+func TestPublishTraces_ResourceAttributeRoutingKey(t *testing.T) {
+       factory := NewFactory()
+       cfg := factory.CreateDefaultConfig().(*Config)
+       cfg.Routing.ResourceAttribute = "service.name"
+       pub := mockPublisher{}
+       pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
+	       return &pub, nil
+       }
+       exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings(metadata.Type).TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, cfg.Routing.ResourceAttribute, connectionName)
+
+       err := exporter.start(t.Context(), componenttest.NewNopHost())
+       require.NoError(t, err)
+
+       // Generate traces with a resource attribute
+       traces := testdata.GenerateTracesOneSpan()
+       resourceSpans := traces.ResourceSpans().At(0)
+       resourceSpans.Resource().Attributes().PutStr("service.name", "my-service")
+
+       pub.On("Publish", mock.Anything, mock.MatchedBy(func(message publisher.Message) bool {
+	       return message.RoutingKey == "my-service" && len(message.Body) > 0
+       })).Return(nil)
+
+       err = exporter.publishTraces(t.Context(), traces)
+       require.NoError(t, err)
+       pub.AssertExpectations(t)
+}
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 

@@ -32,8 +32,9 @@ type ConnectionConfig struct {
 }
 
 type RoutingConfig struct {
-	Exchange   string `mapstructure:"exchange"`
-	RoutingKey string `mapstructure:"routing_key"`
+	Exchange          string `mapstructure:"exchange"`
+	RoutingKey        string `mapstructure:"routing_key"`
+	ResourceAttribute string `mapstructure:"resource_attribute"`
 }
 
 type AuthConfig struct {

@@ -1,0 +1,12 @@
+rabbitmq/resource_attribute:
+  connection:
+    endpoint: amqp://localhost:5672
+    auth:
+      plain:
+        username: user
+        password: pass
+  routing:
+    exchange: amq.direct
+    resource_attribute: service.name
+  encoding_extension: otlp_encoding/rabbitmq
+  durable: true

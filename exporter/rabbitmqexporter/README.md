@@ -32,7 +32,8 @@ The following settings can be configured:
   - `tls` (optional): [TLS configuration](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/configtls.go#L32)
   - `name` (optional): The name of the connection, visible in in RabbitMQ management interface
 - `routing`:
-  - `routing_key` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): Routing key used to route exported messages to RabbitMQ consumers
+  - `routing_key` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): Routing key used to route exported messages to RabbitMQ consumers. If `resource_attribute` is set, this is used as a fallback.
+  - `resource_attribute`: If set, the value of this resource attribute will be used as the routing key for each batch. This allows dynamic routing based on resource attributes, similar to the fileexporter group_by feature.
   - `exchange`: Name of the exchange used to route messages. If omitted, the [default exchange](https://www.rabbitmq.com/tutorials/amqp-concepts#exchange-default) is used which routes to a queue with the same as the routing key. Only [direct exchanges](https://www.rabbitmq.com/tutorials/amqp-concepts#exchange-direct) are currently supported. Note that this component does not handle queue creation or binding.
 - `durable` (default = true): Whether to instruct RabbitMQ to make messages [durable](https://www.rabbitmq.com/docs/queues#durability) by writing to disk
 - `encoding_extension`: (defaults to OTLP protobuf format): ID of the [encoding extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding) to use to marshal data

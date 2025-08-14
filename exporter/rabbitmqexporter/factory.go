@@ -65,12 +65,13 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	config := cfg.(*Config)
 
-	routingKey := getRoutingKeyOrDefault(config, spansRoutingKey)
-	connectionName := defaultSpansConnectionName
-	if config.Connection.Name != "" {
-		connectionName = config.Connection.Name
-	}
-	r := newRabbitmqExporter(config, set.TelemetrySettings, newPublisherFactory(set), newTLSFactory(config), routingKey, connectionName)
+       routingKey := getRoutingKeyOrDefault(config, spansRoutingKey)
+       resourceAttribute := config.Routing.ResourceAttribute
+       connectionName := defaultSpansConnectionName
+       if config.Connection.Name != "" {
+	       connectionName = config.Connection.Name
+       }
+       r := newRabbitmqExporter(config, set.TelemetrySettings, newPublisherFactory(set), newTLSFactory(config), routingKey, resourceAttribute, connectionName)
 
 	return exporterhelper.NewTraces(
 		ctx,
@@ -91,13 +92,14 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	config := (cfg.(*Config))
 
-	routingKey := getRoutingKeyOrDefault(config, metricsRoutingKey)
+       routingKey := getRoutingKeyOrDefault(config, metricsRoutingKey)
+       resourceAttribute := config.Routing.ResourceAttribute
 
-	connectionName := defaultMetricsConnectionName
-	if config.Connection.Name != "" {
-		connectionName = config.Connection.Name
-	}
-	r := newRabbitmqExporter(config, set.TelemetrySettings, newPublisherFactory(set), newTLSFactory(config), routingKey, connectionName)
+       connectionName := defaultMetricsConnectionName
+       if config.Connection.Name != "" {
+	       connectionName = config.Connection.Name
+       }
+       r := newRabbitmqExporter(config, set.TelemetrySettings, newPublisherFactory(set), newTLSFactory(config), routingKey, resourceAttribute, connectionName)
 
 	return exporterhelper.NewMetrics(
 		ctx,
@@ -118,12 +120,13 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	config := (cfg.(*Config))
 
-	routingKey := getRoutingKeyOrDefault(config, logsRoutingKey)
-	connectionName := defaultLogsConnectionName
-	if config.Connection.Name != "" {
-		connectionName = config.Connection.Name
-	}
-	r := newRabbitmqExporter(config, set.TelemetrySettings, newPublisherFactory(set), newTLSFactory(config), routingKey, connectionName)
+       routingKey := getRoutingKeyOrDefault(config, logsRoutingKey)
+       resourceAttribute := config.Routing.ResourceAttribute
+       connectionName := defaultLogsConnectionName
+       if config.Connection.Name != "" {
+	       connectionName = config.Connection.Name
+       }
+       r := newRabbitmqExporter(config, set.TelemetrySettings, newPublisherFactory(set), newTLSFactory(config), routingKey, resourceAttribute, connectionName)
 
 	return exporterhelper.NewLogs(
 		ctx,
